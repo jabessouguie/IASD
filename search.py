@@ -93,8 +93,15 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
-        return [self.child_node(problem, action)
-                for action in problem.actions(self.state)]
+        #List where we will put all the reachable step from this node 
+        L = []
+        #Looking every action that we can do from this step 
+        for action in problem.actions(self.state)]:
+            #For everyone of them 
+            L.append(self.child_node(problem, action))
+        #Then return the list
+        return(L)
+                
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
