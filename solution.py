@@ -1,4 +1,5 @@
-import search
+import copy
+import 
 
 class PMDAProblem(search.class):
 	
@@ -51,17 +52,25 @@ class PMDAProblem(search.class):
 
         return self.patientList == self.goal
 		
+	
+	# path cost is defined by adding the waiting time of all patients still in the room
+	# we consider that patients being treated are not in the room, thus not counting to cost
+	def path_cost(self, patientList):	
 		
-	def path_cost(self, c, state1, action, state2):	
+		cost = 0
+		for p in patientList:
+			if p[4]:
+				cost += p[1]**2
 		
-		for
-		
-		return c + 1
+		return cost
 	
 	# this is the recursive function that digs for the answer
 	# state must include patient list information, we have to send it into the next step
 	def search(self, state, patientList):
 		
+		
+		
+		# ------------> when we return here for next node, this is where the loop goes!
 		# search recursive algorithm:
 		# 0> check if we reached goal
 		# 1> organize patients by waiting time
@@ -72,30 +81,32 @@ class PMDAProblem(search.class):
 		# 5> compute cost into expected state
 		# 6> send current state into search() algorithm for next step
 		
-		# we need to make sure we don't pollute this data
-		nextState = copy.deepcopy(state)
-		patientList = copy.deepcopy(self.patientList)
-		
-		# Rhis is our priority list for patients
+	
+		# This is our priority list for patients
 		# Right now we are strictly enforcing FIFO-like behaviour. 
 		# The longest waiting time goes first even if we have patient/doctor shuffling
-		patientHeuristic = []
-		# we simply look through patients and add the tuple (patientID, totalWaitingTime) to our queue
-		# then quickly organize the priority list by decreasing waiting time
+		# We convert the patientlist into a list of lists for processing
+		patientList = copy.deepcopy(self.patientList)
+		for p in patientList:
+			p = list(p)
+			
+		# we simply look through patients and quickly organize the priority list by decreasing current waiting time
 		# this metric should be solid enough, no need to do combinatorial magic with patients, simply chose next in line in worst case scenario
-		for p in self.patientList:
-			patientHeuristic.append((self.patientList[0], self.labelList[int(self.patientList[2])][1]))
-		patientHeuristic.sort(key=lambda x: x[1], reverse=true)
+		patientList.sort(key=lambda x: x[1], reverse=true)
 		
-		# our new state can be defined as previous stateStep+1, where each step is 5min
-		# path cost can be defined as the cost of the target state. Initialized at 0 until state is defined
-		newState = [0, state[1] + 1]
+		
+		# Cycle through doctors in our hospital and assign a patient to each
+		# patients are defined as busy and their consultation time left is decremented by 5min * doctor efficiency
+		doctorBuffer = []
+		i=0
 		for d in state[2:]:
-			for p in patientList:
-				if p[0] == patientHeuristic[0]:
-					newState.append(list(d).append(p[0])
-					p[3] -= 5*grabDoctor(self, d[0])[1]
-					p[4] = true
+			doctorBuffer.append(list(d).append(patientList[i][0])
+			patientList[i][3] -= 5*grabDoctor(self, d[0])[1]
+			patientList[i][4] = true
+			i++
+			
+		# We have our patients assigned to doctors, we can now calculate the pathCost of this next pathCost
+		newState = (path_cost(patientList), state[1]+1
 		
 		
 	
