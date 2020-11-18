@@ -143,7 +143,7 @@ def depth_first_tree_search(problem):
         frontier.extend(node.expand(problem))
     return None
 
-class PMDAProblem(search.Problem):
+class PMDAProblem(Problem):
         
         timeStep = 5
 	
@@ -159,7 +159,7 @@ class PMDAProblem(search.Problem):
                 for per in validPermutations:
                         for p in state[0]:
                                 if p not in per :
-                                        if i[1]+self.timeStep > i[2]:
+                                        if p[1]+self.timeStep > p[2]:
                                                 permutations.remove(p)
                                                 break
                                                         
@@ -176,7 +176,7 @@ class PMDAProblem(search.Problem):
                         doctor = state[1][index]
                         doctor.append(p[0])
                         # lower remaining consultation time
-                        p[3] -= timeStep*doctor[1]
+                        p[3] -= self.timeStep*doctor[1]
                         # check if the patient will be done with consultation
                         # if patient is done, add his time to state[2] to avoid recomputing
                         # else we lower total waiting time to simplify incrementing only on patients waiting
@@ -188,15 +188,12 @@ class PMDAProblem(search.Problem):
                         
                 # add timeStep to all patients in list
                 for p in state[0]:
-                        p[1] += timeStep
+                        p[1] += self.timeStep
 		
 		
 
         def goal_test(self, state):
-                if isinstance(self.goal, list):
-                        return is_in(state, self.goal)
-                else:
-                        return state[0] == self.goal
+            return state[0] == self.goal
 
         def path_cost(self, c, state1, action, state2):
                 return 0
@@ -204,36 +201,36 @@ class PMDAProblem(search.Problem):
         def value(self, state):
                 # iterate patients and adds waiting room cost to the cost of patients already gone
                 total = 0
-                for p in state2[0]:
+                for p in state[0]:
                         total += p[1]**2
-                return state2[2] + total
+                return state[2] + total
 
         def load(self, fh):
-                doctorList = []
-                labelList = []
-                patientList = []
+            doctorList = []
+            labelList = []
+            patientList = []
 
-                for l in fh:
-                        prelist = l.split(" ")
-                        if len(prelist) > 1:
-                                prelist[-1] = prelist[-1].split('\n')[0]
-                                if prelist[0] == 'MD':
-                                        # doctor - (ID, efficiency)
-                                        doctorList.append( (prelist[1], prelist[2]) )
-                                elif prelist[0] == 'PL':
-                                        labelList.append( (prelist[1], prelist[2], prelist[3]) )
-                                elif prelist[0] == 'P':
-                                        # labelList[int(prelist[3])][1] - this mess is actually very simple
-                                        # grab the correct label from the already filled in list - labelList[n]
-                                        # using the correct label assigned to our patient - int(prelist[3]) <--- note the int so it becomes the index
-                                        # and then we select the consultation time form that label - LabelList[n][2]
-                                        patientList.append( (prelist[1], prelist[2], labelList[int(prelist[3])][1], labelList[int(prelist[3])][2]) )
+            for l in fh:
+                    prelist = l.split(" ")
+                    if len(prelist) > 1:
+                            prelist[-1] = prelist[-1].split('\n')[0]
+                            if prelist[0] == 'MD':
+                                    # doctor - (ID, efficiency)
+                                    doctorList.append( (prelist[1], prelist[2]) )
+                            elif prelist[0] == 'PL':
+                                    labelList.append( (prelist[1], prelist[2], prelist[3]) )
+                            elif prelist[0] == 'P':
+                                    # labelList[int(prelist[3])][1] - this mess is actually very simple
+                                    # grab the correct label from the already filled in list - labelList[n]
+                                    # using the correct label assigned to our patient - int(prelist[3]) <--- note the int so it becomes the index
+                                    # and then we select the consultation time form that label - LabelList[n][2]
+                                    patientList.append( (prelist[1], prelist[2], labelList[int(prelist[3])][1], labelList[int(prelist[3])][2]) )
 
-                state = [patientList, doctorList, 0]
+            state = [patientList, doctorList, 0]
 
-                self.initial = state
+            self.initial = state
 				
-				return
+            return
 		
         def save(self, fh):
                 for d in self.state[1]:
@@ -241,12 +238,12 @@ class PMDAProblem(search.Problem):
                         fh.write(' '.join(map(str, d)))
                 return
 		
-		def search(self):
-			finalState = depth_first_tree_search(self)
-			if  finalState is not None:
-				self.state = finalState
-				return True
-			else:
-				return False
+        def search(self):
+            finalState = depth_first_tree_search(self)
+            if  finalState is not None:
+                self.state = finalState
+                return True
+            else:
+                return False
 			
 
