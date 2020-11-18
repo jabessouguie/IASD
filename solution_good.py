@@ -13,7 +13,7 @@ class PMDAProblem(search.Problem):
         timeStep = 5
 	
         def __init__(self, initial, goal=[]):
-            self.initial = load(initial)
+            self.initial = initial
             self.goal = goal
 
         def actions(self, state):
@@ -94,19 +94,24 @@ class PMDAProblem(search.Problem):
                                         # and then we select the consultation time form that label - LabelList[n][2]
                                         patientList.append( (prelist[1], prelist[2], labelList[int(prelist[3])][1], labelList[int(prelist[3])][2]) )
 
-                self.doctorList = tempList[0]
-                self.labelList = tempList[1]
-                self.patientList = tempList[2]
+                state = [patientList, doctorList, 0]
 
-                return state
+                self.initial = state
+				
+				return
 		
         def save(self, fh):
-                for d in state:
+                for d in self.state[1]:
                         d.pop(1)
-                        fh.write(' '.join(map(str, b)))
+                        fh.write(' '.join(map(str, d)))
                 return
 		
-		
-
-depth_first_tree_search(PMDAProblem(input('Please specify input file:\n')))
+		def search(self):
+			finalState = depth_first_tree_search(self)
+			if  finalState is not None:
+				self.state = finalState
+				return True
+			else:
+				return False
+			
 
