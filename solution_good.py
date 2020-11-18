@@ -87,6 +87,7 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
+        #TODO self.state is ok, checking problem.actions
         return [self.child_node(problem, action)
                 for action in problem.actions(self.state)]
 
@@ -140,7 +141,12 @@ def depth_first_tree_search(problem):
         node = frontier.pop()
         if problem.goal_test(node.state):
             return node
+        # TODO WORKS UNTIL HERE !!!
+        # node.expand(problem) does not work!
         frontier.extend(node.expand(problem))
+        
+        # TODO REMOVE THIS PRINT !!!
+        print(frontier)
     return None
 
 class PMDAProblem(Problem):
@@ -155,15 +161,15 @@ class PMDAProblem(Problem):
                 # we have only one possible action: to fill all doctors with patients
                 # since we can not touch the algorithm it's simpler to return the permutation of patients and apply them to result()
                 # since we can not check for validity of nodes during execution, we must check during this step to only provide valid permutations
-                validPermutations = permutations(state[0], len(state[1]))
+                validPermutations = list(permutations(state[0], len(state[1])))
                 for per in validPermutations:
                         for p in state[0]:
-                                if p not in per :
+                                if p[0] != per[0][0] and p[0] != per[1][0] :
                                         if p[1]+self.timeStep > p[2]:
-                                                permutations.remove(p)
-                                                break
-                                                        
-                                
+                                                # TODO REMOVE THIS PRINT !!!
+                                                print('removed')
+                                                permutations.remove(per)
+                                                break 
                 return iter(validPermutations)
 
         def result(self, state, action):
@@ -171,7 +177,8 @@ class PMDAProblem(Problem):
                 # for each element of our permutation (a patient element) we add it's ID to the n-th doctor
                 # we also decrement the consultation time by timeStep*efficiency and decrement waiting time by timeStep
                 # decrementing waiting time by timeStep allows us to easily add waiting time to patients not in office without checking
-                for index, p in action:
+                for index, p in enumerate(action):
+                        print(p)
                         # add patient to doctor
                         doctor = state[1][index]
                         doctor.append(p[0])
@@ -182,7 +189,12 @@ class PMDAProblem(Problem):
                         # else we lower total waiting time to simplify incrementing only on patients waiting
                         if(p[3]<=0):
                                 state[2] += p[1]**2
-                                state[0].remove(p)
+                                for i in range(len(state[0])):
+                                    print('192 ----------------------------- 192')
+                                    print(state[0][i] == p[0])
+                                    if state[0][i] == p[0]:
+                                        state[0].pop(i)
+                                        break
                         else:
                                 p[2] -= self.timeStep
                         
@@ -209,23 +221,23 @@ class PMDAProblem(Problem):
             doctorList = []
             labelList = []
             patientList = []
-
+			
             for l in fh:
                     prelist = l.split(" ")
                     if len(prelist) > 1:
                             prelist[-1] = prelist[-1].split('\n')[0]
                             if prelist[0] == 'MD':
                                     # doctor - (ID, efficiency)
-                                    doctorList.append( (prelist[1], prelist[2]) )
+                                    doctorList.append( [int(prelist[1]), float(prelist[2])])
                             elif prelist[0] == 'PL':
-                                    labelList.append( (prelist[1], prelist[2], prelist[3]) )
+                                    labelList.append( (int(prelist[1]), int(prelist[2]), int(prelist[3])) )
                             elif prelist[0] == 'P':
                                     # labelList[int(prelist[3])][1] - this mess is actually very simple
                                     # grab the correct label from the already filled in list - labelList[n]
                                     # using the correct label assigned to our patient - int(prelist[3]) <--- note the int so it becomes the index
                                     # and then we select the consultation time form that label - LabelList[n][2]
-                                    patientList.append( (prelist[1], prelist[2], labelList[int(prelist[3])][1], labelList[int(prelist[3])][2]) )
-
+                                    patientList.append( [int(prelist[1]), int(prelist[2]), labelList[int(prelist[3])-1][1], float(labelList[int(prelist[3])-1][2])])
+                                    
             state = [patientList, doctorList, 0]
 
             self.initial = state
@@ -239,8 +251,10 @@ class PMDAProblem(Problem):
                 return
 		
         def search(self):
+            self.state = self.initial
+            print(self.state)
             finalState = depth_first_tree_search(self)
-            if  finalState is not None:
+            if finalState is not None:
                 self.state = finalState
                 return True
             else:
