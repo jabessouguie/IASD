@@ -178,7 +178,6 @@ class PMDAProblem(Problem):
                 # for each element of our permutation (a patient element) we add it's ID to the n-th doctor
                 # we also decrement the consultation time by timeStep*efficiency and decrement waiting time by timeStep
                 # decrementing waiting time by timeStep allows us to easily add waiting time to patients not in office without checking
-                doctorQueue = []
                 #for index, d in enumerate(newState[1]):
                     #doctorQueue.append(list(index, newState[1][1]))
                 for index, p in enumerate(action):
