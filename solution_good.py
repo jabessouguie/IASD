@@ -1,6 +1,6 @@
-#from search.py import Problem, Node, depth_first_tree_search
 from itertools import permutations
 from copy import deepcopy
+#import search
 
 # state is defined as:
 #
@@ -167,7 +167,7 @@ class PMDAProblem(Problem):
                             if nthpatient[1]+self.timeStep > nthpatient[2]:
                                 break
                     else:
-                        validPermutations.append(deepcopy(perm))
+                        validPermutations.append(tuple((perm[0][0], perm[1][0])))
                 return iter(validPermutations)
 
         def result(self, state, action):
@@ -178,21 +178,29 @@ class PMDAProblem(Problem):
                 # for each element of our permutation (a patient element) we add it's ID to the n-th doctor
                 # we also decrement the consultation time by timeStep*efficiency and decrement waiting time by timeStep
                 # decrementing waiting time by timeStep allows us to easily add waiting time to patients not in office without checking
+                doctorQueue = []
+                #for index, d in enumerate(newState[1]):
+                    #doctorQueue.append(list(index, newState[1][1]))
                 for index, p in enumerate(action):
+                        
                         # add patient to doctor
+                        #for d in doctorQueue:
+                           # if()
+                        #else:
+                        
                         doctor = newState[1][index]
-                        doctor.append(p[0])
+                        doctor.append(p)
                         # lower remaining consultation time
                         # check if the patient will be done with consultation
                         # if patient is done, add his time to state[2] to avoid recomputing
                         # else we lower total waiting time to simplify incrementing only on patients waiting           
                         for i in range(len(newState[0])):
                             nthpatient = newState[0][i]
-                            if nthpatient[0] == p[0]:
+                            if nthpatient[0] == p:
                                 nthpatient[3] -= self.timeStep*doctor[1]
                                 nthpatient[1] -= self.timeStep
                                 if(nthpatient[3]<=0):
-                                    newState[2] += p[1]**2
+                                    newState[2] += nthpatient[1]**2
                                     newState[0].pop(i)
                                     break
                         
