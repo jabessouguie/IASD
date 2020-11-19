@@ -1,5 +1,6 @@
 #from search.py import Problem, Node, depth_first_tree_search
 from itertools import permutations
+from copy import deepcopy
 
 # state is defined as:
 #
@@ -87,7 +88,6 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
-        #TODO self.state is ok, checking problem.actions
         return [self.child_node(problem, action)
                 for action in problem.actions(self.state)]
 
@@ -139,14 +139,11 @@ def depth_first_tree_search(problem):
 
     while frontier:
         node = frontier.pop()
+        problem.debugfile(node.state)
         if problem.goal_test(node.state):
             return node
-        # TODO WORKS UNTIL HERE !!!
-        # node.expand(problem) does not work!
         frontier.extend(node.expand(problem))
-        
-        # TODO REMOVE THIS PRINT !!!
-        print(frontier)
+
     return None
 
 class PMDAProblem(Problem):
@@ -161,47 +158,48 @@ class PMDAProblem(Problem):
                 # we have only one possible action: to fill all doctors with patients
                 # since we can not touch the algorithm it's simpler to return the permutation of patients and apply them to result()
                 # since we can not check for validity of nodes during execution, we must check during this step to only provide valid permutations
-                validPermutations = list(permutations(state[0], len(state[1])))
-                for per in validPermutations:
-                        for p in state[0]:
-                                if p[0] != per[0][0] and p[0] != per[1][0] :
-                                        if p[1]+self.timeStep > p[2]:
-                                                # TODO REMOVE THIS PRINT !!!
-                                                print('removed')
-                                                permutations.remove(per)
-                                                break 
+                validPermutations = []
+                for perm in permutations(state[0], len(state[1])):
+                    self.debug.write(str(perm) + '\n')
+                    for i in range(len(state[0])):
+                        nthpatient = state[0][i]
+                        if(nthpatient[0] != perm[0][0] and nthpatient[0] != perm[1][0]):
+                            if nthpatient[1]+self.timeStep > nthpatient[2]:
+                                break
+                    else:
+                        validPermutations.append(deepcopy(perm))
                 return iter(validPermutations)
 
         def result(self, state, action):
+            
+                # keep our previous state clean
+                newState = deepcopy(state)
                 # we get a certain permutation of patients to add to our doctors, sequentially
                 # for each element of our permutation (a patient element) we add it's ID to the n-th doctor
                 # we also decrement the consultation time by timeStep*efficiency and decrement waiting time by timeStep
                 # decrementing waiting time by timeStep allows us to easily add waiting time to patients not in office without checking
                 for index, p in enumerate(action):
-                        print(p)
                         # add patient to doctor
-                        doctor = state[1][index]
+                        doctor = newState[1][index]
                         doctor.append(p[0])
                         # lower remaining consultation time
-                        p[3] -= self.timeStep*doctor[1]
                         # check if the patient will be done with consultation
                         # if patient is done, add his time to state[2] to avoid recomputing
-                        # else we lower total waiting time to simplify incrementing only on patients waiting
-                        if(p[3]<=0):
-                                state[2] += p[1]**2
-                                for i in range(len(state[0])):
-                                    print('192 ----------------------------- 192')
-                                    print(state[0][i] == p[0])
-                                    if state[0][i] == p[0]:
-                                        state[0].pop(i)
-                                        break
-                        else:
-                                p[2] -= self.timeStep
+                        # else we lower total waiting time to simplify incrementing only on patients waiting           
+                        for i in range(len(newState[0])):
+                            nthpatient = newState[0][i]
+                            if nthpatient[0] == p[0]:
+                                nthpatient[3] -= self.timeStep*doctor[1]
+                                nthpatient[1] -= self.timeStep
+                                if(nthpatient[3]<=0):
+                                    newState[2] += p[1]**2
+                                    newState[0].pop(i)
+                                    break
                         
                 # add timeStep to all patients in list
-                for p in state[0]:
+                for p in newState[0]:
                         p[1] += self.timeStep
-		
+                return newState
 		
 
         def goal_test(self, state):
@@ -228,15 +226,15 @@ class PMDAProblem(Problem):
                             prelist[-1] = prelist[-1].split('\n')[0]
                             if prelist[0] == 'MD':
                                     # doctor - (ID, efficiency)
-                                    doctorList.append( [int(prelist[1]), float(prelist[2])])
+                                    doctorList.append( [prelist[1], float(prelist[2])])
                             elif prelist[0] == 'PL':
-                                    labelList.append( (int(prelist[1]), int(prelist[2]), int(prelist[3])) )
+                                    labelList.append( (prelist[1], int(prelist[2]), int(prelist[3])) )
                             elif prelist[0] == 'P':
                                     # labelList[int(prelist[3])][1] - this mess is actually very simple
                                     # grab the correct label from the already filled in list - labelList[n]
                                     # using the correct label assigned to our patient - int(prelist[3]) <--- note the int so it becomes the index
                                     # and then we select the consultation time form that label - LabelList[n][2]
-                                    patientList.append( [int(prelist[1]), int(prelist[2]), labelList[int(prelist[3])-1][1], float(labelList[int(prelist[3])-1][2])])
+                                    patientList.append( [prelist[1], int(prelist[2]), labelList[int(prelist[3])-1][1], float(labelList[int(prelist[3])-1][2])])
                                     
             state = [patientList, doctorList, 0]
 
@@ -247,17 +245,28 @@ class PMDAProblem(Problem):
         def save(self, fh):
                 for d in self.state[1]:
                         d.pop(1)
-                        fh.write(' '.join(map(str, d)))
+                        fh.write(' '.join(map(str, d)) + '\n')
                 return
 		
         def search(self):
+            self.debug = open('debug.txt', 'w')
             self.state = self.initial
-            print(self.state)
-            finalState = depth_first_tree_search(self)
-            if finalState is not None:
-                self.state = finalState
+            finalNode = depth_first_tree_search(self)
+            self.debug.close()
+            if finalNode is not None:
+                self.state = finalNode.state
                 return True
             else:
                 return False
+            
+            
+        def debugfile(self, state):
+
+            for d in state[1]:
+                self.debug.write(' '.join(map(str, d)) + '\n')
+            self.debug.write('---\n')
+            for d in state[0]:
+                self.debug.write(' '.join(map(str, d)) + '\n')
+            self.debug.write('/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\n')
 			
 
