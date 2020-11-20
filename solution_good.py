@@ -28,9 +28,12 @@ class PMDAProblem(search.Problem):
                 # since we can not touch the algorithm it's simpler to return the permutation of patients and apply them to result()
                 # since we can not check for validity of nodes during execution, we must check during this step to only provide valid permutations
                 validPermutations = []
-                for perm in permutations(state.plist, len(state.dlist)):
-                    for i in range(len(state.plist)):
-                        nthpatient = state.plist[i]
+                currentPatients = list(deepcopy(state.plist))
+                for i in range(0, len(state.dlist) - len(currentPatients)):
+                    currentPatients.append(('Empty', 0, 5, 0))
+                for perm in permutations(currentPatients, len(state.dlist)):
+                    for i in range(len(currentPatients)):
+                        nthpatient = currentPatients[i]
                         onconsultation = False
                         for p in perm:
                             onconsultation = onconsultation or int(nthpatient[0] == p[0])
