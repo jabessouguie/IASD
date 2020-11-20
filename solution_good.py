@@ -40,8 +40,6 @@ class PMDAProblem(search.Problem):
 
         def result(self, state, action):
             
-            
-            self.debugfile(state)
             # keep our previous state clean
             plist = list(state.plist)
             dlist = list(state.dlist)
@@ -59,32 +57,24 @@ class PMDAProblem(search.Problem):
                        # if()
                     #else:
                     
-                    # turn doctor tuple into list, append patient, retuple
+                    # turn doctor tuple into list, append patient, retuple    
                     doctor = list(dlist[index])
                     doctor.append(p)
                     dlist[index] = tuple(doctor)
-                    
                     # lower remaining consultation time
                     # check if the patient will be done with consultation
                     # if patient is done, add his time to state.totalGone to avoid recomputing
                     # else we lower total waiting time to simplify incrementing only on patients waiting
-                    print('75---------------------------75')
-                    print(action)
-                    print(plist)
                     for i in range(len(plist)):
                         nthpatient = list(plist[i])
                         if nthpatient[0] == p:
-                            print('ding')
                             nthpatient[3] -= self.timeStep*doctor[1]
                             nthpatient[1] -= self.timeStep
                             if(nthpatient[3]<=0):
                                 totalGone += nthpatient[1]**2
                                 plist.pop(i)
                                 break
-                        else:
-                            print('noding')
                         plist[i] = tuple(nthpatient)
-                    print(plist)
                     
             # add timeStep to all patients in list
             nlist = []
@@ -92,15 +82,26 @@ class PMDAProblem(search.Problem):
                     temp = list(p)
                     temp[1] += self.timeStep
                     nlist.append(tuple(temp))
-            print(nlist)
             return State(nlist, dlist, totalGone)
 		
 
         def goal_test(self, state):
+            self.debugfile(state)
             return state.plist == self.goal
 
         def path_cost(self, c, state1, action, state2):
-                return 0
+                cost1 = 0
+                cost2 = 0
+                for p1 in state1.plist:
+                    cost1 += p1[1]**2
+                cost1 += state1.totalGone
+                for p2 in state2.plist:
+                    cost2 += p2[1]**2
+                cost2 += state2.totalGone
+                return cost2-cost1
+
+        def h(self, node):
+            return -self.value(node)
 
         def value(self, node):
                 # iterate patients and adds waiting room cost to the cost of patients already gone
@@ -109,7 +110,7 @@ class PMDAProblem(search.Problem):
                         total += p[1]**2
                 return node.state.totalGone + total
 
-        def load(self, fh):
+        def load(fh):
             doctorList = []
             labelList = []
             patientList = []
@@ -131,13 +132,12 @@ class PMDAProblem(search.Problem):
                                     patientList.append( (prelist[1], int(prelist[2]), labelList[int(prelist[3])-1][1], float(labelList[int(prelist[3])-1][2])))
                                     
             loaded = State(patientList, doctorList, 0)
-
-            self.initial = loaded
 				
             return loaded
 		
         def save(self, fh):
                 for d in self.state.dlist:
+                        d = list(d)
                         d.pop(1)
                         fh.write(' '.join(map(str, d)) + '\n')
                 return
@@ -145,7 +145,7 @@ class PMDAProblem(search.Problem):
         def search(self):
             self.debug = open('debug.txt', 'w')
             self.state = self.initial
-            finalNode = search.best_first_graph_search(self, self.value)
+            finalNode = search.recursive_best_first_search(self)
             self.debug.close()
             if finalNode is not None:
                 self.state = finalNode.state
