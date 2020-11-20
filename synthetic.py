@@ -1,6 +1,6 @@
 import solution_good
 
-inf = open('pdf.txt','r')
+inf = open('PUB4.txt','r')
 outf = open('out.txt','w')
 
 a=solution_good.PMDAProblem(solution_good.PMDAProblem.load(inf))

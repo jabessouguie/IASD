@@ -31,11 +31,17 @@ class PMDAProblem(search.Problem):
                 for perm in permutations(state.plist, len(state.dlist)):
                     for i in range(len(state.plist)):
                         nthpatient = state.plist[i]
-                        if(nthpatient[0] != perm[0][0] and nthpatient[0] != perm[1][0]):
+                        onconsultation = False
+                        for p in perm:
+                            onconsultation = onconsultation or int(nthpatient[0] == p[0])
+                        if not onconsultation:
                             if nthpatient[1]+self.timeStep > nthpatient[2]:
                                 break
                     else:
-                        validPermutations.append(tuple((perm[0][0], perm[1][0])))
+                        fixedperm = []
+                        for p in perm:
+                            fixedperm.append(p[0])
+                        validPermutations.append(tuple(fixedperm))
                 return iter(validPermutations)
 
         def result(self, state, action):
@@ -48,10 +54,7 @@ class PMDAProblem(search.Problem):
             # for each element of our permutation (a patient element) we add it's ID to the n-th doctor
             # we also decrement the consultation time by timeStep*efficiency and decrement waiting time by timeStep
             # decrementing waiting time by timeStep allows us to easily add waiting time to patients not in office without checking
-            #for index, d in enumerate(newState[1]):
-            #doctorQueue.append(list(index, newState[1][1]))
             for index, p in enumerate(action):
-                    
                     # add patient to doctor
                     #for d in doctorQueue:
                        # if()
@@ -69,11 +72,11 @@ class PMDAProblem(search.Problem):
                         nthpatient = list(plist[i])
                         if nthpatient[0] == p:
                             nthpatient[3] -= self.timeStep*doctor[1]
-                            nthpatient[1] -= self.timeStep
                             if(nthpatient[3]<=0):
                                 totalGone += nthpatient[1]**2
                                 plist.pop(i)
                                 break
+                            nthpatient[1] -= self.timeStep
                         plist[i] = tuple(nthpatient)
                     
             # add timeStep to all patients in list
@@ -101,7 +104,10 @@ class PMDAProblem(search.Problem):
                 return cost2-cost1
 
         def h(self, node):
-            return -self.value(node)
+            initialcost = 0
+            for p in self.initial.plist:
+                initialcost += p[1]**2
+            return initialcost
 
         def value(self, node):
                 # iterate patients and adds waiting room cost to the cost of patients already gone
